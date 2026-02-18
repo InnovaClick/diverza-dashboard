@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Reporte Diverza</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+        .header p { color: #8892b0; font-size: 1rem; }
+        
+        /* Upload section */
+        .upload-section {
+            background: rgba(255,255,255,0.05);
+            border: 2px dashed rgba(0,212,255,0.5);
+            border-radius: 16px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-section:hover, .upload-section.dragover {
+            border-color: #00d4ff;
+            background: rgba(0,212,255,0.1);
+        }
+        .upload-section input[type="file"] {
+            display: none;
+        }
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .upload-text {
+            color: #8892b0;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+        .upload-text strong {
+            color: #00d4ff;
+        }
+        .upload-hint {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        .upload-status {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .upload-status.success {
+            display: block;
+            background: rgba(0,255,136,0.2);
+            color: #00ff88;
+        }
+        .upload-status.error {
+            display: block;
+            background: rgba(255,107,107,0.2);
+            color: #ff6b6b;
+        }
+        
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .kpi-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .kpi-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0,212,255,0.3);
+        }
+        .kpi-value { font-size: 2.5rem; font-weight: bold; margin-bottom: 8px; }
+        .kpi-label { color: #8892b0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-hint { color: #00d4ff; font-size: 0.75rem; margin-top: 8px; opacity: 0.7; }
+        .kpi-card.total .kpi-value { color: #00d4ff; }
+        .kpi-card.active .kpi-value { color: #00ff88; }
+        .kpi-card.inactive .kpi-value { color: #ff6b6b; }
+        .kpi-card.pending .kpi-value { color: #ffd93d; }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .chart-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .chart-card h3 { margin-bottom: 20px; color: #00d4ff; font-size: 1.1rem; }
+        .chart-container { position: relative; height: 300px; }
+        .chart-hint { color: #8892b0; font-size: 0.75rem; margin-top: 10px; text-align: center; }
+        
+        .custom-tooltip {
+            position: absolute;
+            background: rgba(22, 33, 62, 0.95);
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
+            padding: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .custom-tooltip h4 { color: #00d4ff; margin-bottom: 8px; font-size: 0.9rem; }
+        .custom-tooltip ul { list-style: none; padding: 0; margin: 0; }
+        .custom-tooltip li { color: #fff; font-size: 0.8rem; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .custom-tooltip li:last-child { border-bottom: none; }
+        .custom-tooltip .more { color: #8892b0; font-size: 0.75rem; margin-top: 8px; font-style: italic; }
+        
+        .no-data {
+            text-align: center;
+            padding: 60px;
+            color: #8892b0;
+        }
+        .no-data-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .footer { text-align: center; color: #8892b0; padding: 20px; font-size: 0.85rem; }
+        @media (max-width: 768px) {
+            .charts-grid { grid-template-columns: 1fr; }
+            .header h1 { font-size: 1.8rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📊 Dashboard Reporte Diverza</h1>
+        <p>Última actualización: <span id="lastUpdate">-</span></p>
+    </div>
+
+    <div class="upload-section" id="uploadSection">
+        <input type="file" id="fileInput" accept=".xlsx,.xls">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text">
+            <strong>Arrastra tu archivo Excel aquí</strong> o haz click para seleccionar
+        </div>
+        <div class="upload-hint">Se leerá la hoja "Reporte Diverza" automáticamente</div>
+        <div class="upload-status" id="uploadStatus"></div>
+    </div>
+
+    <div id="dashboardContent" style="display: none;">
+        <div class="kpi-container">
+            <a href="listado.html?filtro=todos" class="kpi-card total">
+                <div class="kpi-value" id="totalRegistros">0</div>
+                <div class="kpi-label">Total Registros</div>
+                <div class="kpi-hint">Click para ver listado →</div>
+            </a>
+            <a href="listado.html?filtro=activos" class="kpi-card active">
+                <div class="kpi-value" id="csdActivos">0</div>
+                <div class="kpi-label">CSD Activos</div>
+                <div class="kpi-hint">Click para ver listado →</div>
+            </a>
+            <a href="listado.html?filtro=inactivos" class="kpi-card inactive">
+                <div class="kpi-value" id="csdInactivos">0</div>
+                <div class="kpi-label">CSD Inactivos</div>
+                <div class="kpi-hint">Click para ver listado →</div>
+            </a>
+            <a href="listado.html?filtro=pendientes" class="kpi-card pending">
+                <div class="kpi-value" id="sinFirma">0</div>
+                <div class="kpi-label">Pendientes Firma</div>
+                <div class="kpi-hint">Click para ver listado →</div>
+            </a>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>📅 Registros por Mes de Firma</h3>
+                <div class="chart-container">
+                    <canvas id="firmasPorMes"></canvas>
+                </div>
+                <div class="chart-hint">Hover para vista previa • Click para ver listado completo</div>
+            </div>
+            <div class="chart-card">
+                <h3>🏢 Distribución por Gerencia</h3>
+                <div class="chart-container">
+                    <canvas id="porGerencia"></canvas>
+                </div>
+                <div class="chart-hint">Hover para vista previa • Click para ver listado completo</div>
+            </div>
+            <div class="chart-card">
+                <h3>📋 Régimen Fiscal</h3>
+                <div class="chart-container">
+                    <canvas id="porRegimen"></canvas>
+                </div>
+                <div class="chart-hint">Hover para vista previa • Click para ver listado completo</div>
+            </div>
+            <div class="chart-card">
+                <h3>⚠️ Expiración de CSD</h3>
+                <div class="chart-container">
+                    <canvas id="expiracionCSD"></canvas>
+                </div>
+                <div class="chart-hint">Hover para vista previa • Click para ver listado completo</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="noDataMessage" class="no-data">
+        <div class="no-data-icon">📤</div>
+        <h2>Sube un archivo Excel para comenzar</h2>
+        <p>El dashboard se actualizará automáticamente con tus datos</p>
+    </div>
+
+    <div class="footer">
+        <p>Dashboard generado por Sam 🛠️ | Grupo Bituaj - Click Seguros</p>
+    </div>
+
+    <div id="customTooltip" class="custom-tooltip" style="display: none;"></div>
+
+    <script>
+        let rawData = [];
+        let charts = {};
+        
+        // Column mapping - map Excel columns to our data structure
+        const columnMap = {
+            'idCliente': 'id',
+            'rfc': 'rfc',
+            'razonSocial': 'nombre',
+            'Gerencia': 'gerencia',
+            'CSD Activo': 'csd',
+            'fechaFirmadoCliente': 'fechaFirma',
+            'email': 'email',
+            'Regimen Fiscal': 'regimen',
+            'expiration_date': 'expCSD'
+        };
+
+        // File upload handling
+        const uploadSection = document.getElementById('uploadSection');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        uploadSection.addEventListener('click', () => fileInput.click());
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+        
+        uploadSection.addEventListener('dragleave', () => {
+            uploadSection.classList.remove('dragover');
+        });
+        
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        });
+
+        function processFile(file) {
+            if (!file.name.match(/\.(xlsx|xls)$/i)) {
+                showStatus('Por favor sube un archivo Excel (.xlsx o .xls)', 'error');
+                return;
+            }
+
+            showStatus('Procesando archivo...', 'success');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Find "Reporte Diverza" sheet
+                    let sheetName = workbook.SheetNames.find(name => 
+                        name.toLowerCase().includes('reporte diverza') || 
+                        name.toLowerCase().includes('reportediverza')
+                    );
+                    
+                    // If not found, use first sheet
+                    if (!sheetName) {
+                        sheetName = workbook.SheetNames[0];
+                        console.log('Hoja "Reporte Diverza" no encontrada, usando:', sheetName);
+                    }
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: false });
+                    
+                    if (jsonData.length === 0) {
+                        showStatus('El archivo no contiene datos', 'error');
+                        return;
+                    }
+                    
+                    // Transform data
+                    rawData = jsonData.map((row, idx) => {
+                        // Try to find the right columns by checking various possible names
+                        const getValue = (possibleNames) => {
+                            for (const name of possibleNames) {
+                                if (row[name] !== undefined && row[name] !== null && row[name] !== '') {
+                                    return row[name];
+                                }
+                            }
+                            return null;
+                        };
+                        
+                        // Parse date fields
+                        const parseDate = (val) => {
+                            if (!val) return null;
+                            // Handle Excel date serial numbers
+                            if (typeof val === 'number') {
+                                const date = new Date((val - 25569) * 86400 * 1000);
+                                return date.toISOString().split('T')[0];
+                            }
+                            // Handle string dates
+                            if (typeof val === 'string') {
+                                const match = val.match(/(\d{4})-(\d{2})-(\d{2})/);
+                                if (match) return match[0];
+                                // Try other formats
+                                const date = new Date(val);
+                                if (!isNaN(date)) return date.toISOString().split('T')[0];
+                            }
+                            return null;
+                        };
+                        
+                        return {
+                            id: getValue(['idCliente', 'id', 'ID']) || idx + 1,
+                            rfc: getValue(['rfc', 'RFC']) || '',
+                            nombre: getValue(['razonSocial', 'razonsocial', 'Razón Social', 'nombre', 'Nombre']) || '',
+                            gerencia: getValue(['Gerencia', 'gerencia', 'GERENCIA']) || 'N/A',
+                            csd: getValue(['CSD Activo', 'csdActivo', 'CSD']) === 'SI' ? 'SI' : 'NO',
+                            fechaFirma: parseDate(getValue(['fechaFirmadoCliente', 'fechafirmadocliente', 'Fecha Firma'])),
+                            email: getValue(['email', 'Email', 'correo']) || '',
+                            regimen: getValue(['Regimen Fiscal', 'regimenfiscal', 'Régimen Fiscal']) || 'N/A',
+                            expCSD: parseDate(getValue(['expiration_date', 'expirationdate', 'Exp CSD']))
+                        };
+                    }).filter(d => d.nombre || d.rfc); // Filter out empty rows
+                    
+                    // Store in localStorage
+                    localStorage.setItem('diverzaData', JSON.stringify(rawData));
+                    
+                    showStatus(`✅ ${rawData.length} registros cargados correctamente`, 'success');
+                    updateDashboard();
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    showStatus('Error al procesar el archivo: ' + error.message, 'error');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function showStatus(message, type) {
+            uploadStatus.textContent = message;
+            uploadStatus.className = 'upload-status ' + type;
+        }
+
+        function updateDashboard() {
+            if (rawData.length === 0) {
+                document.getElementById('dashboardContent').style.display = 'none';
+                document.getElementById('noDataMessage').style.display = 'block';
+                return;
+            }
+            
+            document.getElementById('dashboardContent').style.display = 'block';
+            document.getElementById('noDataMessage').style.display = 'none';
+            
+            // Update KPIs
+            const totalRegistros = rawData.length;
+            const csdActivos = rawData.filter(d => d.csd === "SI").length;
+            const csdInactivos = rawData.filter(d => d.csd === "NO").length;
+            const sinFirma = rawData.filter(d => !d.fechaFirma).length;
+
+            document.getElementById('totalRegistros').textContent = totalRegistros;
+            document.getElementById('csdActivos').textContent = csdActivos;
+            document.getElementById('csdInactivos').textContent = csdInactivos;
+            document.getElementById('sinFirma').textContent = sinFirma;
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleDateString('es-MX', {
+                year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+            
+            // Recreate charts
+            createCharts();
+        }
+
+        // Tooltip
+        const tooltipEl = document.getElementById('customTooltip');
+        
+        function showTooltip(records, title, x, y) {
+            const first3 = records.slice(0, 3);
+            let html = `<h4>${title} (${records.length})</h4><ul>`;
+            first3.forEach(r => {
+                html += `<li>${r.nombre || r.rfc}</li>`;
+            });
+            html += '</ul>';
+            if (records.length > 3) {
+                html += `<div class="more">+ ${records.length - 3} más... Click para ver todos</div>`;
+            }
+            tooltipEl.innerHTML = html;
+            tooltipEl.style.display = 'block';
+            tooltipEl.style.left = Math.min(x, window.innerWidth - 320) + 'px';
+            tooltipEl.style.top = y + 'px';
+        }
+
+        function hideTooltip() {
+            tooltipEl.style.display = 'none';
+        }
+
+        // Helper functions
+        function getRecordsByMonth(mes) {
+            return rawData.filter(d => d.fechaFirma && d.fechaFirma.startsWith(mes));
+        }
+        function getRecordsByGerencia(ger) {
+            return rawData.filter(d => {
+                const g = d.gerencia.includes('Matriz') ? d.gerencia : d.gerencia.split(',')[0];
+                return g === ger;
+            });
+        }
+        function getRecordsByRegimen(reg) {
+            return rawData.filter(d => {
+                const r = d.regimen === "Personas Físicas con Actividades Empresariales y Profesionales" ? "PFAE" :
+                          d.regimen === "Régimen Simplificado de Confianza" ? "RESICO" :
+                          d.regimen === "General de Ley Personas Morales" ? "PM" : "Otro";
+                return r === reg;
+            });
+        }
+        function getRecordsByExpiracion(cat) {
+            const hoy = new Date();
+            return rawData.filter(d => {
+                if (!d.expCSD) return false;
+                const exp = new Date(d.expCSD);
+                const meses = (exp - hoy) / (1000 * 60 * 60 * 24 * 30);
+                if (cat === '< 6 meses') return meses < 6;
+                if (cat === '6-12 meses') return meses >= 6 && meses < 12;
+                if (cat === '1-2 años') return meses >= 12 && meses < 24;
+                if (cat === '> 2 años') return meses >= 24;
+                return false;
+            });
+        }
+
+        function createCharts() {
+            // 1. Firmas por Mes
+            const firmasPorMes = {};
+            rawData.filter(d => d.fechaFirma).forEach(d => {
+                const mes = d.fechaFirma.substring(0, 7);
+                firmasPorMes[mes] = (firmasPorMes[mes] || 0) + 1;
+            });
+            const mesesOrdenados = Object.keys(firmasPorMes).sort();
+            
+            charts.firmas = new Chart(document.getElementById('firmasPorMes'), {
+                type: 'line',
+                data: {
+                    labels: mesesOrdenados.map(m => {
+                        const [y, mo] = m.split('-');
+                        return new Date(y, mo-1).toLocaleDateString('es-MX', {month: 'short', year: '2-digit'});
+                    }),
+                    datasets: [{
+                        label: 'Firmas',
+                        data: mesesOrdenados.map(m => firmasPorMes[m]),
+                        borderColor: '#00d4ff',
+                        backgroundColor: 'rgba(0,212,255,0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: '#8892b0' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        x: { ticks: { color: '#8892b0' }, grid: { display: false } }
+                    },
+                    onHover: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const mes = mesesOrdenados[idx];
+                            const records = getRecordsByMonth(mes);
+                            showTooltip(records, `Firmas ${mes}`, e.native.pageX + 10, e.native.pageY + 10);
+                            e.native.target.style.cursor = 'pointer';
+                        } else {
+                            hideTooltip();
+                            e.native.target.style.cursor = 'default';
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const mes = mesesOrdenados[idx];
+                            window.location.href = `listado.html?tipo=mes&valor=${mes}`;
+                        }
+                    }
+                }
+            });
+
+            // 2. Por Gerencia
+            const porGerencia = {};
+            rawData.forEach(d => {
+                const g = d.gerencia.includes('Matriz') ? d.gerencia : d.gerencia.split(',')[0];
+                porGerencia[g] = (porGerencia[g] || 0) + 1;
+            });
+            const topGerencias = Object.entries(porGerencia).sort((a,b) => b[1]-a[1]).slice(0, 10);
+            
+            charts.gerencia = new Chart(document.getElementById('porGerencia'), {
+                type: 'bar',
+                data: {
+                    labels: topGerencias.map(g => g[0]),
+                    datasets: [{
+                        label: 'Registros',
+                        data: topGerencias.map(g => g[1]),
+                        backgroundColor: ['#00d4ff', '#7b2cbf', '#00ff88', '#ffd93d', '#ff6b6b', '#4ecdc4', '#a55eea', '#fd9644', '#26de81', '#778ca3']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { color: '#8892b0' }, grid: { color: 'rgba(255,255,255,0.1)' } },
+                        y: { ticks: { color: '#8892b0' }, grid: { display: false } }
+                    },
+                    onHover: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const ger = topGerencias[idx][0];
+                            const records = getRecordsByGerencia(ger);
+                            showTooltip(records, ger, e.native.pageX + 10, e.native.pageY + 10);
+                            e.native.target.style.cursor = 'pointer';
+                        } else {
+                            hideTooltip();
+                            e.native.target.style.cursor = 'default';
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const ger = topGerencias[idx][0];
+                            window.location.href = `listado.html?tipo=gerencia&valor=${encodeURIComponent(ger)}`;
+                        }
+                    }
+                }
+            });
+
+            // 3. Por Regimen
+            const porRegimen = {};
+            rawData.forEach(d => {
+                const r = d.regimen === "Personas Físicas con Actividades Empresariales y Profesionales" ? "PFAE" :
+                          d.regimen === "Régimen Simplificado de Confianza" ? "RESICO" :
+                          d.regimen === "General de Ley Personas Morales" ? "PM" : "Otro";
+                porRegimen[r] = (porRegimen[r] || 0) + 1;
+            });
+            const regimenLabels = Object.keys(porRegimen);
+            
+            charts.regimen = new Chart(document.getElementById('porRegimen'), {
+                type: 'doughnut',
+                data: {
+                    labels: regimenLabels,
+                    datasets: [{
+                        data: Object.values(porRegimen),
+                        backgroundColor: ['#00d4ff', '#7b2cbf', '#00ff88', '#ffd93d']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#fff' } },
+                        tooltip: { enabled: false }
+                    },
+                    onHover: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const reg = regimenLabels[idx];
+                            const records = getRecordsByRegimen(reg);
+                            showTooltip(records, reg, e.native.pageX + 10, e.native.pageY + 10);
+                            e.native.target.style.cursor = 'pointer';
+                        } else {
+                            hideTooltip();
+                            e.native.target.style.cursor = 'default';
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const reg = regimenLabels[idx];
+                            window.location.href = `listado.html?tipo=regimen&valor=${encodeURIComponent(reg)}`;
+                        }
+                    }
+                }
+            });
+
+            // 4. Expiración CSD
+            const hoy = new Date();
+            const expiracion = { '< 6 meses': 0, '6-12 meses': 0, '1-2 años': 0, '> 2 años': 0 };
+            rawData.filter(d => d.expCSD).forEach(d => {
+                const exp = new Date(d.expCSD);
+                const meses = (exp - hoy) / (1000 * 60 * 60 * 24 * 30);
+                if (meses < 6) expiracion['< 6 meses']++;
+                else if (meses < 12) expiracion['6-12 meses']++;
+                else if (meses < 24) expiracion['1-2 años']++;
+                else expiracion['> 2 años']++;
+            });
+            const expLabels = Object.keys(expiracion);
+            
+            charts.expiracion = new Chart(document.getElementById('expiracionCSD'), {
+                type: 'pie',
+                data: {
+                    labels: expLabels,
+                    datasets: [{
+                        data: Object.values(expiracion),
+                        backgroundColor: ['#ff6b6b', '#ffd93d', '#00ff88', '#00d4ff']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#fff' } },
+                        tooltip: { enabled: false }
+                    },
+                    onHover: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const cat = expLabels[idx];
+                            const records = getRecordsByExpiracion(cat);
+                            showTooltip(records, `Expira ${cat}`, e.native.pageX + 10, e.native.pageY + 10);
+                            e.native.target.style.cursor = 'pointer';
+                        } else {
+                            hideTooltip();
+                            e.native.target.style.cursor = 'default';
+                        }
+                    },
+                    onClick: (e, elements) => {
+                        if (elements.length) {
+                            const idx = elements[0].index;
+                            const cat = expLabels[idx];
+                            window.location.href = `listado.html?tipo=expiracion&valor=${encodeURIComponent(cat)}`;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Hide tooltip when mouse leaves chart area
+        document.querySelectorAll('.chart-container').forEach(container => {
+            container.addEventListener('mouseleave', hideTooltip);
+        });
+
+        // Load existing data from localStorage on page load
+        const savedData = localStorage.getItem('diverzaData');
+        if (savedData) {
+            try {
+                rawData = JSON.parse(savedData);
+                if (rawData.length > 0) {
+                    updateDashboard();
+                }
+            } catch (e) {
+                console.error('Error loading saved data:', e);
+            }
+        }
+    </script>
+</body>
+</html>

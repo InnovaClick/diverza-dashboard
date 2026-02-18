@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listado - Reporte Diverza</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .back-btn {
+            background: rgba(0,212,255,0.2);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .back-btn:hover {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+        .header h1 {
+            font-size: 2rem;
+            background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .filter-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .filter-badge {
+            background: rgba(0,212,255,0.2);
+            color: #00d4ff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        .count-badge {
+            background: rgba(0,255,136,0.2);
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+        .search-box {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            font-size: 0.95rem;
+            min-width: 250px;
+        }
+        .search-box::placeholder { color: #8892b0; }
+        
+        .table-container {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        th {
+            background: rgba(0,212,255,0.1);
+            color: #00d4ff;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            position: sticky;
+            top: 0;
+        }
+        tr:hover { background: rgba(255,255,255,0.05); }
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .status-active { background: rgba(0,255,136,0.2); color: #00ff88; }
+        .status-inactive { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+        .status-warning { background: rgba(255,217,61,0.2); color: #ffd93d; }
+        
+        .email-link {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+        .email-link:hover { text-decoration: underline; }
+        
+        .export-btn {
+            background: linear-gradient(90deg, #7b2cbf, #00d4ff);
+            border: none;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.3s ease;
+        }
+        .export-btn:hover { transform: scale(1.05); }
+        
+        .footer {
+            text-align: center;
+            color: #8892b0;
+            padding: 20px;
+            font-size: 0.85rem;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.5rem; }
+            .filter-info { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="index.html" class="back-btn">← Volver al Dashboard</a>
+        <h1 id="pageTitle">📋 Listado de Registros</h1>
+    </div>
+
+    <div class="filter-info">
+        <div>
+            <span class="filter-badge" id="filterBadge">Filtro: Todos</span>
+            <span class="count-badge" id="countBadge">0 registros</span>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" class="search-box" id="searchInput" placeholder="🔍 Buscar por nombre o RFC...">
+            <button class="export-btn" onclick="exportCSV()">📥 Exportar CSV</button>
+        </div>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Razón Social</th>
+                    <th>RFC</th>
+                    <th>Gerencia</th>
+                    <th>Régimen</th>
+                    <th>CSD</th>
+                    <th>Exp. CSD</th>
+                    <th>Fecha Firma</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>Dashboard generado por Sam 🛠️ | Grupo Bituaj - Click Seguros</p>
+    </div>
+
+    <script>
+        // Get data from localStorage
+        const rawData = JSON.parse(localStorage.getItem('diverzaData') || '[]');
+        
+        // If no data, redirect to main page
+        if (rawData.length === 0) {
+            alert('No hay datos cargados. Por favor sube un archivo Excel primero.');
+            window.location.href = 'index.html';
+        }
+        
+        // Parse URL params
+        const params = new URLSearchParams(window.location.search);
+        const filtro = params.get('filtro');
+        const tipo = params.get('tipo');
+        const valor = params.get('valor');
+
+        let filteredData = [];
+        let filterLabel = 'Todos los registros';
+
+        // Apply filters
+        if (filtro) {
+            switch(filtro) {
+                case 'todos':
+                    filteredData = rawData;
+                    filterLabel = 'Todos los registros';
+                    break;
+                case 'activos':
+                    filteredData = rawData.filter(d => d.csd === 'SI');
+                    filterLabel = 'CSD Activos';
+                    break;
+                case 'inactivos':
+                    filteredData = rawData.filter(d => d.csd === 'NO');
+                    filterLabel = 'CSD Inactivos';
+                    break;
+                case 'pendientes':
+                    filteredData = rawData.filter(d => !d.fechaFirma);
+                    filterLabel = 'Pendientes de Firma';
+                    break;
+            }
+        } else if (tipo && valor) {
+            switch(tipo) {
+                case 'mes':
+                    filteredData = rawData.filter(d => d.fechaFirma && d.fechaFirma.startsWith(valor));
+                    filterLabel = `Firmas en ${valor}`;
+                    break;
+                case 'gerencia':
+                    filteredData = rawData.filter(d => {
+                        const g = d.gerencia.includes('Matriz') ? d.gerencia : d.gerencia.split(',')[0];
+                        return g === valor;
+                    });
+                    filterLabel = `Gerencia: ${valor}`;
+                    break;
+                case 'regimen':
+                    filteredData = rawData.filter(d => {
+                        const r = d.regimen === "Personas Físicas con Actividades Empresariales y Profesionales" ? "PFAE" :
+                                  d.regimen === "Régimen Simplificado de Confianza" ? "RESICO" :
+                                  d.regimen === "General de Ley Personas Morales" ? "PM" : "Otro";
+                        return r === valor;
+                    });
+                    filterLabel = `Régimen: ${valor}`;
+                    break;
+                case 'expiracion':
+                    const hoy = new Date();
+                    filteredData = rawData.filter(d => {
+                        if (!d.expCSD) return false;
+                        const exp = new Date(d.expCSD);
+                        const meses = (exp - hoy) / (1000 * 60 * 60 * 24 * 30);
+                        if (valor === '< 6 meses') return meses < 6;
+                        if (valor === '6-12 meses') return meses >= 6 && meses < 12;
+                        if (valor === '1-2 años') return meses >= 12 && meses < 24;
+                        if (valor === '> 2 años') return meses >= 24;
+                        return false;
+                    });
+                    filterLabel = `Expiración CSD: ${valor}`;
+                    break;
+            }
+        } else {
+            filteredData = rawData;
+        }
+
+        document.getElementById('filterBadge').textContent = `Filtro: ${filterLabel}`;
+        document.getElementById('pageTitle').textContent = `📋 ${filterLabel}`;
+
+        function getExpirationStatus(expDate) {
+            if (!expDate) return { class: '', text: '-' };
+            const hoy = new Date();
+            const exp = new Date(expDate);
+            const meses = (exp - hoy) / (1000 * 60 * 60 * 24 * 30);
+            if (meses < 6) return { class: 'status-inactive', text: expDate };
+            if (meses < 12) return { class: 'status-warning', text: expDate };
+            return { class: 'status-active', text: expDate };
+        }
+
+        function getRegimenShort(regimen) {
+            if (regimen === "Personas Físicas con Actividades Empresariales y Profesionales") return "PFAE";
+            if (regimen === "Régimen Simplificado de Confianza") return "RESICO";
+            if (regimen === "General de Ley Personas Morales") return "PM";
+            return regimen || "-";
+        }
+
+        function renderTable(data) {
+            document.getElementById('countBadge').textContent = `${data.length} registros`;
+            document.getElementById('tableBody').innerHTML = data.map(d => {
+                const expStatus = getExpirationStatus(d.expCSD);
+                return `
+                <tr>
+                    <td>${d.id}</td>
+                    <td>${d.nombre}</td>
+                    <td>${d.rfc}</td>
+                    <td>${d.gerencia}</td>
+                    <td>${getRegimenShort(d.regimen)}</td>
+                    <td><span class="status-badge ${d.csd === 'SI' ? 'status-active' : 'status-inactive'}">${d.csd === 'SI' ? 'Activo' : 'Inactivo'}</span></td>
+                    <td><span class="status-badge ${expStatus.class}">${expStatus.text}</span></td>
+                    <td>${d.fechaFirma || '-'}</td>
+                    <td><a href="mailto:${d.email}" class="email-link">${d.email}</a></td>
+                </tr>
+            `}).join('');
+        }
+
+        renderTable(filteredData);
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const search = e.target.value.toLowerCase();
+            const searched = filteredData.filter(d => 
+                d.nombre.toLowerCase().includes(search) || 
+                d.rfc.toLowerCase().includes(search)
+            );
+            renderTable(searched);
+        });
+
+        // Export to CSV
+        function exportCSV() {
+            const headers = ['ID', 'Razón Social', 'RFC', 'Gerencia', 'Régimen', 'CSD', 'Exp CSD', 'Fecha Firma', 'Email'];
+            const rows = filteredData.map(d => [
+                d.id,
+                `"${d.nombre}"`,
+                d.rfc,
+                `"${d.gerencia}"`,
+                getRegimenShort(d.regimen),
+                d.csd,
+                d.expCSD || '',
+                d.fechaFirma || '',
+                d.email
+            ]);
+            
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `diverza_${filterLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+    </script>
+</body>
+</html>
