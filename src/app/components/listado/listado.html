@@ -1,0 +1,102 @@
+<div class="listado">
+  <header class="header">
+    <a routerLink="/" class="back-link">← Volver al Dashboard</a>
+    <h1>📋 Listado de Facturas</h1>
+  </header>
+
+  @if (data.length === 0) {
+    <div class="empty-state">
+      <p>No hay datos cargados</p>
+      <a routerLink="/" class="btn btn-primary">Cargar archivo Excel</a>
+    </div>
+  } @else {
+    <!-- Filters -->
+    <div class="filters">
+      <div class="filter-group">
+        <input 
+          type="text" 
+          placeholder="🔍 Buscar por cliente, RFC, concepto o UUID..."
+          [(ngModel)]="searchTerm"
+          (input)="applyFilters()">
+      </div>
+      
+      <div class="filter-group">
+        <select [(ngModel)]="filterEstado" (change)="applyFilters()">
+          <option value="">Todos los estados</option>
+          @for (estado of estados; track estado) {
+            <option [value]="estado">{{ estado }}</option>
+          }
+        </select>
+      </div>
+      
+      <button class="btn btn-secondary" (click)="exportToCSV()">
+        📥 Exportar CSV
+      </button>
+    </div>
+
+    <p class="results-count">
+      Mostrando {{ filteredData.length }} de {{ data.length }} registros
+    </p>
+
+    <!-- Table -->
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th (click)="sortData('fecha')" class="sortable">
+              Fecha
+              @if (sortColumn === 'fecha') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th (click)="sortData('cliente')" class="sortable">
+              Cliente
+              @if (sortColumn === 'cliente') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th>RFC</th>
+            <th>Concepto</th>
+            <th (click)="sortData('subtotal')" class="sortable numeric">
+              Subtotal
+              @if (sortColumn === 'subtotal') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th class="numeric">IVA</th>
+            <th (click)="sortData('total')" class="sortable numeric">
+              Total
+              @if (sortColumn === 'total') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th (click)="sortData('estado')" class="sortable">
+              Estado
+              @if (sortColumn === 'estado') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filteredData; track item.uuid || $index) {
+            <tr>
+              <td>{{ item.fecha }}</td>
+              <td class="client-cell" [title]="item.cliente">{{ item.cliente }}</td>
+              <td>{{ item.rfc }}</td>
+              <td class="concepto-cell" [title]="item.concepto">{{ item.concepto }}</td>
+              <td class="numeric">{{ formatCurrency(item.subtotal) }}</td>
+              <td class="numeric">{{ formatCurrency(item.iva) }}</td>
+              <td class="numeric total">{{ formatCurrency(item.total) }}</td>
+              <td>
+                <span class="status-badge" [ngClass]="getEstadoClass(item.estado)">
+                  {{ item.estado }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
