@@ -76,7 +76,7 @@
             [data]="mesFirmaChartData"
             [type]="barChartType"
             [options]="chartOptions"
-            (chartClick)="onMesFirmaClick($event.event, $event.active)">
+            (chartClick)="onMesFirmaClick($event)">
           </canvas>
         </div>
         <p class="chart-hint">👆 Haz clic en una barra para ver el listado del mes</p>
@@ -89,7 +89,7 @@
             [data]="gerenciaChartData"
             [type]="pieChartType"
             [options]="pieChartOptions"
-            (chartClick)="onGerenciaClick($event.event, $event.active)">
+            (chartClick)="onGerenciaClick($event)">
           </canvas>
         </div>
         <p class="chart-hint">👆 Haz clic para ver el listado de cada gerencia</p>
@@ -102,7 +102,7 @@
             [data]="regimenChartData"
             [type]="pieChartType"
             [options]="pieChartOptions"
-            (chartClick)="onRegimenClick($event.event, $event.active)">
+            (chartClick)="onRegimenClick($event)">
           </canvas>
         </div>
         <p class="chart-hint">👆 Haz clic para filtrar por régimen</p>
@@ -115,7 +115,7 @@
             [data]="expiracionChartData"
             [type]="barChartType"
             [options]="chartOptions"
-            (chartClick)="onExpiracionClick($event.event, $event.active)">
+            (chartClick)="onExpiracionClick($event)">
           </canvas>
         </div>
         <p class="chart-hint">👆 Haz clic para filtrar por fecha de vencimiento</p>

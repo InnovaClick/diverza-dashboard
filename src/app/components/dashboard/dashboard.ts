@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartType, ChartEvent, ActiveElement } from 'chart.js';
+import { ChartConfiguration, ChartType } from 'chart.js';
 import { ExcelService, DashboardStats } from '../../services/excel';
 
 @Component({
@@ -79,41 +79,47 @@ export class Dashboard {
   }
 
   // Handlers para clicks en gráficas
-  onMesFirmaClick(event: ChartEvent, active: ActiveElement[]) {
-    if (active.length > 0) {
-      const index = active[0].index;
-      const mes = Object.keys(this.stats?.porMesFirma || {})[index];
+  onMesFirmaClick(event: any) {
+    if (event.active && event.active.length > 0) {
+      const index = event.active[0].index;
+      const keys = Object.keys(this.stats?.porMesFirma || {}).sort();
+      const mes = keys[index];
       if (mes) {
         this.router.navigate(['/listado'], { queryParams: { tipo: 'mes', valor: mes } });
       }
     }
   }
 
-  onGerenciaClick(event: ChartEvent, active: ActiveElement[]) {
-    if (active.length > 0) {
-      const index = active[0].index;
-      const gerencia = Object.keys(this.stats?.porGerencia || {})[index];
+  onGerenciaClick(event: any) {
+    if (event.active && event.active.length > 0) {
+      const index = event.active[0].index;
+      const keys = Object.keys(this.stats?.porGerencia || {}).sort((a, b) => 
+        (this.stats?.porGerencia[b] || 0) - (this.stats?.porGerencia[a] || 0)
+      );
+      const gerencia = keys[index];
       if (gerencia) {
         this.router.navigate(['/listado'], { queryParams: { tipo: 'gerencia', valor: gerencia } });
       }
     }
   }
 
-  onRegimenClick(event: ChartEvent, active: ActiveElement[]) {
-    if (active.length > 0) {
-      const index = active[0].index;
-      const regimen = Object.keys(this.stats?.porRegimen || {})[index];
+  onRegimenClick(event: any) {
+    if (event.active && event.active.length > 0) {
+      const index = event.active[0].index;
+      const keys = Object.keys(this.stats?.porRegimen || {});
+      const regimen = keys[index];
       if (regimen) {
         this.router.navigate(['/listado'], { queryParams: { tipo: 'regimen', valor: regimen } });
       }
     }
   }
 
-  onExpiracionClick(event: ChartEvent, active: ActiveElement[]) {
-    if (active.length > 0) {
-      const index = active[0].index;
+  onExpiracionClick(event: any) {
+    if (event.active && event.active.length > 0) {
+      const index = event.active[0].index;
       const expOrder = ['< 6 meses', '6-12 meses', '1-2 años', '> 2 años'];
-      const categoria = expOrder[index];
+      const expEntries = expOrder.filter(cat => (this.stats?.porExpiracion[cat] || 0) > 0);
+      const categoria = expEntries[index];
       if (categoria) {
         this.router.navigate(['/listado'], { queryParams: { tipo: 'expiracion', valor: categoria } });
       }
