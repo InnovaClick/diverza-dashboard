@@ -66,7 +66,17 @@ export class Dashboard {
     }
   };
 
-  constructor(private excelService: ExcelService) {}
+  constructor(private excelService: ExcelService) {
+    // Cargar datos existentes al iniciar
+    const existingData = this.excelService.getData();
+    if (existingData.length > 0) {
+      this.hasData = true;
+      this.stats = this.excelService.calculateStats();
+      this.updateCharts();
+      this.fileName = 'Archivo anterior';
+      this.lastUpdate = 'Datos recuperados de sesión anterior';
+    }
+  }
 
   onDragOver(event: DragEvent) {
     event.preventDefault();

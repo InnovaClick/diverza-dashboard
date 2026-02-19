@@ -52,6 +52,33 @@ export interface DashboardStats {
 export class ExcelService {
   
   private data: DiverReport[] = [];
+  private readonly STORAGE_KEY = 'diverzaData';
+
+  constructor() {
+    // Cargar datos guardados al iniciar
+    this.loadFromStorage();
+  }
+
+  private loadFromStorage(): void {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        this.data = JSON.parse(stored);
+        console.log(`Datos recuperados de localStorage: ${this.data.length} registros`);
+      }
+    } catch (e) {
+      console.error('Error cargando datos de localStorage:', e);
+    }
+  }
+
+  private saveToStorage(): void {
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data));
+      console.log(`Datos guardados en localStorage: ${this.data.length} registros`);
+    } catch (e) {
+      console.error('Error guardando en localStorage:', e);
+    }
+  }
 
   readExcelFile(file: File): Promise<DiverReport[]> {
     return new Promise((resolve, reject) => {
@@ -78,6 +105,8 @@ export class ExcelService {
           
           // Parse the data
           this.data = this.parseData(jsonData);
+          // Guardar en localStorage para persistencia
+          this.saveToStorage();
           resolve(this.data);
         } catch (error) {
           reject(error);
