@@ -26,6 +26,16 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  .filter-badge {
+    display: inline-block;
+    background: rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    margin-top: 10px;
+  }
 }
 
 .empty-state {

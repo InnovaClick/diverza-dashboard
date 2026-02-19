@@ -2,6 +2,9 @@
   <header class="header">
     <a routerLink="/" class="back-link">← Volver al Dashboard</a>
     <h1>📋 Listado de Clientes</h1>
+    @if (filterLabel) {
+      <div class="filter-badge">{{ filterLabel }}</div>
+    }
   </header>
 
   @if (data.length === 0) {

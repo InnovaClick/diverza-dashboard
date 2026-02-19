@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { ExcelService, DiverReport } from '../../services/excel';
 
@@ -21,13 +21,87 @@ export class Listado implements OnInit {
   sortDirection: 'asc' | 'desc' = 'asc';
   
   regimenes: string[] = [];
+  filterLabel = '';
 
-  constructor(private excelService: ExcelService) {}
+  constructor(private excelService: ExcelService, private route: ActivatedRoute) {}
 
   ngOnInit() {
     this.data = this.excelService.getData();
     this.filteredData = [...this.data];
     this.regimenes = [...new Set(this.data.map(d => d.regimen).filter(r => r))];
+    
+    // Procesar query params para filtros desde dashboard
+    this.route.queryParams.subscribe(params => {
+      this.applyUrlFilters(params);
+    });
+  }
+
+  applyUrlFilters(params: any) {
+    const filtro = params['filtro'];
+    const tipo = params['tipo'];
+    const valor = params['valor'];
+
+    if (filtro) {
+      switch (filtro) {
+        case 'todos':
+          this.filterLabel = 'Todos los registros';
+          this.filteredData = [...this.data];
+          break;
+        case 'activos':
+          this.filterLabel = 'CSD Activos';
+          this.filteredData = this.data.filter(d => d.csd === 'Activo');
+          break;
+        case 'inactivos':
+          this.filterLabel = 'CSD Inactivos';
+          this.filteredData = this.data.filter(d => d.csd === 'Inactivo');
+          break;
+        case 'pendientes':
+          this.filterLabel = 'Pendientes de Firma';
+          this.filteredData = this.data.filter(d => !d.fechaFirma || d.fechaFirma.trim() === '');
+          break;
+      }
+    } else if (tipo && valor) {
+      switch (tipo) {
+        case 'mes':
+          this.filterLabel = `Firmas en ${valor}`;
+          this.filteredData = this.data.filter(d => d.fechaFirma && d.fechaFirma.includes(valor.substring(0, 7)));
+          break;
+        case 'gerencia':
+          this.filterLabel = `Gerencia: ${valor}`;
+          this.filteredData = this.data.filter(d => {
+            const g = d.gerencia?.includes('Matriz') ? d.gerencia : d.gerencia?.split(',')[0];
+            return g === valor;
+          });
+          break;
+        case 'regimen':
+          this.filterLabel = `Régimen: ${valor}`;
+          this.filteredData = this.data.filter(d => {
+            const reg = d.regimen?.toLowerCase() || '';
+            if (valor === 'PFAE') return reg.includes('pfae') || reg.includes('actividades empresariales');
+            if (valor === 'RESICO') return reg.includes('resico') || reg.includes('simplificado');
+            if (valor === 'PM') return reg.includes('moral');
+            return d.regimen === valor;
+          });
+          break;
+        case 'expiracion':
+          this.filterLabel = `Expiración CSD: ${valor}`;
+          const hoy = new Date();
+          this.filteredData = this.data.filter(d => {
+            if (!d.expCsd) return false;
+            const exp = new Date(d.expCsd);
+            const meses = (exp.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24 * 30);
+            if (valor === '< 6 meses') return meses < 6;
+            if (valor === '6-12 meses') return meses >= 6 && meses < 12;
+            if (valor === '1-2 años') return meses >= 12 && meses < 24;
+            if (valor === '> 2 años') return meses >= 24;
+            return false;
+          });
+          break;
+      }
+    } else {
+      this.filterLabel = '';
+      this.filteredData = [...this.data];
+    }
   }
 
   applyFilters() {

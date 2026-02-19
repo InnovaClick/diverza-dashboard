@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartType } from 'chart.js';
+import { ChartConfiguration, ChartType, ChartEvent, ActiveElement } from 'chart.js';
 import { ExcelService, DashboardStats } from '../../services/excel';
 
 @Component({
@@ -66,7 +66,7 @@ export class Dashboard {
     }
   };
 
-  constructor(private excelService: ExcelService) {
+  constructor(private excelService: ExcelService, private router: Router) {
     // Cargar datos existentes al iniciar
     const existingData = this.excelService.getData();
     if (existingData.length > 0) {
@@ -75,6 +75,48 @@ export class Dashboard {
       this.updateCharts();
       this.fileName = 'Archivo anterior';
       this.lastUpdate = 'Datos recuperados de sesión anterior';
+    }
+  }
+
+  // Handlers para clicks en gráficas
+  onMesFirmaClick(event: ChartEvent, active: ActiveElement[]) {
+    if (active.length > 0) {
+      const index = active[0].index;
+      const mes = Object.keys(this.stats?.porMesFirma || {})[index];
+      if (mes) {
+        this.router.navigate(['/listado'], { queryParams: { tipo: 'mes', valor: mes } });
+      }
+    }
+  }
+
+  onGerenciaClick(event: ChartEvent, active: ActiveElement[]) {
+    if (active.length > 0) {
+      const index = active[0].index;
+      const gerencia = Object.keys(this.stats?.porGerencia || {})[index];
+      if (gerencia) {
+        this.router.navigate(['/listado'], { queryParams: { tipo: 'gerencia', valor: gerencia } });
+      }
+    }
+  }
+
+  onRegimenClick(event: ChartEvent, active: ActiveElement[]) {
+    if (active.length > 0) {
+      const index = active[0].index;
+      const regimen = Object.keys(this.stats?.porRegimen || {})[index];
+      if (regimen) {
+        this.router.navigate(['/listado'], { queryParams: { tipo: 'regimen', valor: regimen } });
+      }
+    }
+  }
+
+  onExpiracionClick(event: ChartEvent, active: ActiveElement[]) {
+    if (active.length > 0) {
+      const index = active[0].index;
+      const expOrder = ['< 6 meses', '6-12 meses', '1-2 años', '> 2 años'];
+      const categoria = expOrder[index];
+      if (categoria) {
+        this.router.navigate(['/listado'], { queryParams: { tipo: 'expiracion', valor: categoria } });
+      }
     }
   }
 

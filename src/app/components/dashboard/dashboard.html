@@ -69,52 +69,56 @@
 
     <!-- Charts Section -->
     <div class="charts-container">
-      <div class="chart-card">
+      <div class="chart-card clickable">
         <h3>📅 Registros por Mes de Firma</h3>
         <div class="chart-wrapper">
           <canvas baseChart
             [data]="mesFirmaChartData"
             [type]="barChartType"
-            [options]="chartOptions">
+            [options]="chartOptions"
+            (chartClick)="onMesFirmaClick($event.event, $event.active)">
           </canvas>
         </div>
-        <p class="chart-hint">Haz clic en una barra para ver el listado del mes</p>
+        <p class="chart-hint">👆 Haz clic en una barra para ver el listado del mes</p>
       </div>
 
-      <div class="chart-card">
+      <div class="chart-card clickable">
         <h3>🏢 Distribución por Gerencia</h3>
         <div class="chart-wrapper">
           <canvas baseChart
             [data]="gerenciaChartData"
             [type]="pieChartType"
-            [options]="pieChartOptions">
+            [options]="pieChartOptions"
+            (chartClick)="onGerenciaClick($event.event, $event.active)">
           </canvas>
         </div>
-        <p class="chart-hint">Haz clic para ver el listado de cada gerencia</p>
+        <p class="chart-hint">👆 Haz clic para ver el listado de cada gerencia</p>
       </div>
 
-      <div class="chart-card">
+      <div class="chart-card clickable">
         <h3>📋 Distribución por Régimen Fiscal</h3>
         <div class="chart-wrapper">
           <canvas baseChart
             [data]="regimenChartData"
             [type]="pieChartType"
-            [options]="pieChartOptions">
+            [options]="pieChartOptions"
+            (chartClick)="onRegimenClick($event.event, $event.active)">
           </canvas>
         </div>
-        <p class="chart-hint">Haz clic para filtrar por régimen</p>
+        <p class="chart-hint">👆 Haz clic para filtrar por régimen</p>
       </div>
 
-      <div class="chart-card">
+      <div class="chart-card clickable">
         <h3>⏰ Expiración de CSD</h3>
         <div class="chart-wrapper">
           <canvas baseChart
             [data]="expiracionChartData"
             [type]="barChartType"
-            [options]="chartOptions">
+            [options]="chartOptions"
+            (chartClick)="onExpiracionClick($event.event, $event.active)">
           </canvas>
         </div>
-        <p class="chart-hint">Monitorea las fechas de vencimiento</p>
+        <p class="chart-hint">👆 Haz clic para filtrar por fecha de vencimiento</p>
       </div>
     </div>
 
