@@ -61,10 +61,17 @@ export class ExcelService {
         try {
           const workbook = XLSX.read(e.target.result, { type: 'binary' });
           
-          // Try to find "Reporte Diverza" sheet, or use first sheet
+          // Try to find "Reporte Diverza" sheet (exact match like stable version)
           let sheetName = workbook.SheetNames.find(name => 
-            name.toLowerCase().includes('reporte') || name.toLowerCase().includes('diverza')
-          ) || workbook.SheetNames[0];
+            name.toLowerCase().includes('reporte diverza') || 
+            name.toLowerCase().includes('reportediverza')
+          );
+          
+          // If not found, use first sheet
+          if (!sheetName) {
+            sheetName = workbook.SheetNames[0];
+            console.log('Hoja "Reporte Diverza" no encontrada, usando:', sheetName);
+          }
           
           const worksheet = workbook.Sheets[sheetName];
           const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
@@ -92,26 +99,30 @@ export class ExcelService {
       const row = rawData[i];
       if (!row || row.length === 0) continue;
       
+      // Obtener CSD y determinar si está activo
+      const csdRaw = this.getValue(row, headers, ['csd activo', 'csdactivo', 'csd']);
+      const csdActivo = csdRaw?.toUpperCase() === 'SI' ? 'Activo' : (csdRaw ? 'Inactivo' : '');
+
       const report: DiverReport = {
-        // Campos de facturación
-        fecha: this.getValue(row, headers, ['fecha', 'date', 'fecha firma']) || '',
-        cliente: this.getValue(row, headers, ['cliente', 'nombre', 'razon social', 'customer', 'id']) || '',
+        // Campos de facturación (legacy)
+        fecha: this.getValue(row, headers, ['fecha', 'date']) || '',
+        cliente: this.getValue(row, headers, ['idcliente', 'id', 'cliente']) || String(i),
         rfc: this.getValue(row, headers, ['rfc']) || '',
-        concepto: this.getValue(row, headers, ['concepto', 'descripcion', 'description']) || '',
-        subtotal: this.getNumericValue(row, headers, ['subtotal', 'sub total']),
+        concepto: this.getValue(row, headers, ['concepto', 'descripcion']) || '',
+        subtotal: this.getNumericValue(row, headers, ['subtotal']),
         iva: this.getNumericValue(row, headers, ['iva', 'impuesto']),
-        total: this.getNumericValue(row, headers, ['total', 'monto', 'importe']),
-        estado: this.getValue(row, headers, ['estado', 'status', 'estatus']) || 'Pendiente',
+        total: this.getNumericValue(row, headers, ['total', 'monto']),
+        estado: this.getValue(row, headers, ['estado', 'status']) || '',
         uuid: this.getValue(row, headers, ['uuid', 'folio fiscal']) || '',
-        // Campos de cliente (versión estable)
-        id: this.getValue(row, headers, ['id', 'no.', 'numero', 'num']) || '',
-        razonSocial: this.getValue(row, headers, ['razon social', 'razón social', 'nombre', 'cliente']) || '',
-        gerencia: this.getValue(row, headers, ['gerencia', 'sucursal', 'oficina']) || '',
-        regimen: this.getValue(row, headers, ['regimen', 'régimen', 'regimen fiscal']) || '',
-        csd: this.getValue(row, headers, ['csd', 'certificado', 'estatus csd']) || '',
-        expCsd: this.getValue(row, headers, ['exp. csd', 'exp csd', 'expiracion csd', 'vencimiento']) || '',
-        fechaFirma: this.getValue(row, headers, ['fecha firma', 'firma', 'fecha de firma']) || '',
-        email: this.getValue(row, headers, ['email', 'correo', 'e-mail', 'mail']) || ''
+        // Campos de cliente (versión estable - EXACTOS)
+        id: this.getValue(row, headers, ['idcliente', 'id']) || String(i),
+        razonSocial: this.getValue(row, headers, ['razonsocial', 'razon social', 'razón social', 'nombre']) || '',
+        gerencia: this.getValue(row, headers, ['gerencia']) || 'N/A',
+        regimen: this.getValue(row, headers, ['regimen fiscal', 'regimenfiscal', 'régimen fiscal']) || 'N/A',
+        csd: csdActivo,
+        expCsd: this.parseDate(this.getValue(row, headers, ['expiration_date', 'expirationdate', 'exp csd', 'exp. csd'])),
+        fechaFirma: this.parseDate(this.getValue(row, headers, ['fechafirmadocliente', 'fechafirmadocliente', 'fecha firma'])),
+        email: this.getValue(row, headers, ['email', 'correo']) || ''
       };
       
       if (report.cliente || report.total > 0) {
@@ -200,11 +211,10 @@ export class ExcelService {
 
       // === Stats de clientes (versión estable) ===
       
-      // CSD Activos/Inactivos
-      const csd = item.csd?.toLowerCase() || '';
-      if (csd.includes('activo') || csd === 'si' || csd === 'sí') {
+      // CSD Activos/Inactivos (igual que versión estable)
+      if (item.csd === 'Activo') {
         stats.csdActivos++;
-      } else if (csd && (csd.includes('inactivo') || csd === 'no')) {
+      } else if (item.csd === 'Inactivo') {
         stats.csdInactivos++;
       }
 
@@ -266,5 +276,24 @@ export class ExcelService {
       }
     } catch {}
     return fecha.substring(0, 7) || 'Sin fecha';
+  }
+
+  private parseDate(val: any): string {
+    if (!val) return '';
+    // Handle Excel date serial numbers
+    if (typeof val === 'number') {
+      const date = new Date((val - 25569) * 86400 * 1000);
+      return date.toISOString().split('T')[0];
+    }
+    // Handle string dates
+    if (typeof val === 'string') {
+      const match = val.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (match) return match[0];
+      // Try other formats
+      const date = new Date(val);
+      if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
+      return val;
+    }
+    return '';
   }
 }
