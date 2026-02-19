@@ -1,7 +1,7 @@
 <div class="dashboard">
   <header class="header">
     <h1>📊 Dashboard Reporte Diverza</h1>
-    <p>Carga tu archivo Excel para visualizar las métricas</p>
+    <p>Última actualización: <span>{{ lastUpdate }}</span></p>
   </header>
 
   <!-- Upload Section -->
@@ -42,70 +42,79 @@
   <!-- KPIs Section -->
   @if (stats) {
     <div class="kpi-container">
-      <div class="kpi-card">
-        <div class="kpi-value">{{ stats.totalFacturas }}</div>
-        <div class="kpi-label">Total Facturas</div>
-      </div>
+      <a routerLink="/listado" [queryParams]="{filtro: 'todos'}" class="kpi-card total">
+        <div class="kpi-value">{{ stats.totalRegistros }}</div>
+        <div class="kpi-label">Total Registros</div>
+        <div class="kpi-hint">Click para ver listado →</div>
+      </a>
       
-      <div class="kpi-card highlight">
-        <div class="kpi-value">{{ formatCurrency(stats.totalMonto) }}</div>
-        <div class="kpi-label">Monto Total</div>
-      </div>
+      <a routerLink="/listado" [queryParams]="{filtro: 'activos'}" class="kpi-card active">
+        <div class="kpi-value">{{ stats.csdActivos }}</div>
+        <div class="kpi-label">CSD Activos</div>
+        <div class="kpi-hint">Click para ver listado →</div>
+      </a>
       
-      <div class="kpi-card">
-        <div class="kpi-value">{{ formatCurrency(stats.totalIVA) }}</div>
-        <div class="kpi-label">Total IVA</div>
-      </div>
+      <a routerLink="/listado" [queryParams]="{filtro: 'inactivos'}" class="kpi-card inactive">
+        <div class="kpi-value">{{ stats.csdInactivos }}</div>
+        <div class="kpi-label">CSD Inactivos</div>
+        <div class="kpi-hint">Click para ver listado →</div>
+      </a>
       
-      <div class="kpi-card">
-        <div class="kpi-value">{{ formatCurrency(stats.promedioFactura) }}</div>
-        <div class="kpi-label">Promedio por Factura</div>
-      </div>
-      
-      <div class="kpi-card success">
-        <div class="kpi-value">{{ stats.facturasPagadas }}</div>
-        <div class="kpi-label">Pagadas</div>
-      </div>
-      
-      <div class="kpi-card warning">
-        <div class="kpi-value">{{ stats.facturasPendientes }}</div>
-        <div class="kpi-label">Pendientes</div>
-      </div>
+      <a routerLink="/listado" [queryParams]="{filtro: 'pendientes'}" class="kpi-card pending">
+        <div class="kpi-value">{{ stats.pendientesFirma }}</div>
+        <div class="kpi-label">Pendientes Firma</div>
+        <div class="kpi-hint">Click para ver listado →</div>
+      </a>
     </div>
 
     <!-- Charts Section -->
     <div class="charts-container">
       <div class="chart-card">
-        <h3>💰 Top 5 Clientes por Monto</h3>
+        <h3>📅 Registros por Mes de Firma</h3>
         <div class="chart-wrapper">
           <canvas baseChart
-            [data]="clienteChartData"
+            [data]="mesFirmaChartData"
             [type]="barChartType"
             [options]="chartOptions">
           </canvas>
         </div>
+        <p class="chart-hint">Haz clic en una barra para ver el listado del mes</p>
       </div>
 
       <div class="chart-card">
-        <h3>📊 Estado de Facturas</h3>
+        <h3>🏢 Distribución por Gerencia</h3>
         <div class="chart-wrapper">
           <canvas baseChart
-            [data]="estadoChartData"
+            [data]="gerenciaChartData"
             [type]="pieChartType"
             [options]="pieChartOptions">
           </canvas>
         </div>
+        <p class="chart-hint">Haz clic para ver el listado de cada gerencia</p>
       </div>
 
-      <div class="chart-card full-width">
-        <h3>📅 Monto por Mes</h3>
+      <div class="chart-card">
+        <h3>📋 Distribución por Régimen Fiscal</h3>
         <div class="chart-wrapper">
           <canvas baseChart
-            [data]="mesChartData"
+            [data]="regimenChartData"
+            [type]="pieChartType"
+            [options]="pieChartOptions">
+          </canvas>
+        </div>
+        <p class="chart-hint">Haz clic para filtrar por régimen</p>
+      </div>
+
+      <div class="chart-card">
+        <h3>⏰ Expiración de CSD</h3>
+        <div class="chart-wrapper">
+          <canvas baseChart
+            [data]="expiracionChartData"
             [type]="barChartType"
             [options]="chartOptions">
           </canvas>
         </div>
+        <p class="chart-hint">Monitorea las fechas de vencimiento</p>
       </div>
     </div>
 
@@ -116,4 +125,8 @@
       </a>
     </div>
   }
+
+  <div class="footer">
+    <p>Dashboard generado por Sam 🛠️ | Grupo Bituaj - Click Seguros</p>
+  </div>
 </div>

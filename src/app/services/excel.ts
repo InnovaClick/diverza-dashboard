@@ -24,6 +24,7 @@ export interface DiverReport {
 }
 
 export interface DashboardStats {
+  // Stats de facturas (legacy)
   totalFacturas: number;
   totalMonto: number;
   totalIVA: number;
@@ -34,6 +35,15 @@ export interface DashboardStats {
   porCliente: { [key: string]: number };
   porMes: { [key: string]: number };
   porEstado: { [key: string]: number };
+  // Stats de clientes (versión estable)
+  totalRegistros: number;
+  csdActivos: number;
+  csdInactivos: number;
+  pendientesFirma: number;
+  porGerencia: { [key: string]: number };
+  porRegimen: { [key: string]: number };
+  porMesFirma: { [key: string]: number };
+  porExpiracion: { [key: string]: number };
 }
 
 @Injectable({
@@ -134,6 +144,7 @@ export class ExcelService {
 
   calculateStats(): DashboardStats {
     const stats: DashboardStats = {
+      // Stats de facturas (legacy)
       totalFacturas: this.data.length,
       totalMonto: 0,
       totalIVA: 0,
@@ -143,15 +154,26 @@ export class ExcelService {
       facturasCanceladas: 0,
       porCliente: {},
       porMes: {},
-      porEstado: {}
+      porEstado: {},
+      // Stats de clientes (versión estable)
+      totalRegistros: this.data.length,
+      csdActivos: 0,
+      csdInactivos: 0,
+      pendientesFirma: 0,
+      porGerencia: {},
+      porRegimen: {},
+      porMesFirma: {},
+      porExpiracion: {}
     };
+
+    const hoy = new Date();
 
     this.data.forEach(item => {
       stats.totalMonto += item.total;
       stats.totalIVA += item.iva;
       
-      // Por estado
-      const estado = item.estado.toLowerCase();
+      // Por estado (facturas)
+      const estado = item.estado?.toLowerCase() || '';
       if (estado.includes('pagad') || estado.includes('paid')) {
         stats.facturasPagadas++;
       } else if (estado.includes('cancel')) {
@@ -172,7 +194,63 @@ export class ExcelService {
       }
       
       // Por estado (para gráfico)
-      stats.porEstado[item.estado] = (stats.porEstado[item.estado] || 0) + 1;
+      if (item.estado) {
+        stats.porEstado[item.estado] = (stats.porEstado[item.estado] || 0) + 1;
+      }
+
+      // === Stats de clientes (versión estable) ===
+      
+      // CSD Activos/Inactivos
+      const csd = item.csd?.toLowerCase() || '';
+      if (csd.includes('activo') || csd === 'si' || csd === 'sí') {
+        stats.csdActivos++;
+      } else if (csd && (csd.includes('inactivo') || csd === 'no')) {
+        stats.csdInactivos++;
+      }
+
+      // Pendientes de firma
+      if (!item.fechaFirma || item.fechaFirma.trim() === '') {
+        stats.pendientesFirma++;
+      }
+
+      // Por gerencia
+      if (item.gerencia) {
+        const gerencia = item.gerencia.includes('Matriz') ? item.gerencia : item.gerencia.split(',')[0].trim();
+        stats.porGerencia[gerencia] = (stats.porGerencia[gerencia] || 0) + 1;
+      }
+
+      // Por régimen
+      if (item.regimen) {
+        let regimenCorto = 'Otro';
+        const reg = item.regimen.toLowerCase();
+        if (reg.includes('pfae') || reg.includes('actividades empresariales')) {
+          regimenCorto = 'PFAE';
+        } else if (reg.includes('resico') || reg.includes('simplificado')) {
+          regimenCorto = 'RESICO';
+        } else if (reg.includes('moral')) {
+          regimenCorto = 'PM';
+        }
+        stats.porRegimen[regimenCorto] = (stats.porRegimen[regimenCorto] || 0) + 1;
+      }
+
+      // Por mes de firma
+      if (item.fechaFirma) {
+        const mesFirma = this.extractMonth(item.fechaFirma);
+        stats.porMesFirma[mesFirma] = (stats.porMesFirma[mesFirma] || 0) + 1;
+      }
+
+      // Por expiración de CSD
+      if (item.expCsd) {
+        try {
+          const exp = new Date(item.expCsd);
+          const meses = (exp.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24 * 30);
+          let categoria = '> 2 años';
+          if (meses < 6) categoria = '< 6 meses';
+          else if (meses < 12) categoria = '6-12 meses';
+          else if (meses < 24) categoria = '1-2 años';
+          stats.porExpiracion[categoria] = (stats.porExpiracion[categoria] || 0) + 1;
+        } catch {}
+      }
     });
 
     stats.promedioFactura = stats.totalFacturas > 0 ? stats.totalMonto / stats.totalFacturas : 0;

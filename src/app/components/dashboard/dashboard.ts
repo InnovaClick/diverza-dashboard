@@ -18,6 +18,7 @@ export class Dashboard {
   hasData = false;
   errorMessage = '';
   fileName = '';
+  lastUpdate = '-';
   
   stats: DashboardStats | null = null;
 
@@ -25,26 +26,31 @@ export class Dashboard {
   barChartType: ChartType = 'bar';
   pieChartType: ChartType = 'pie';
   
-  clienteChartData: ChartConfiguration['data'] = {
+  mesFirmaChartData: ChartConfiguration['data'] = {
     labels: [],
-    datasets: [{ data: [], label: 'Monto por Cliente', backgroundColor: [] }]
+    datasets: [{ data: [], label: 'Registros', backgroundColor: '#00d4ff' }]
   };
   
-  estadoChartData: ChartConfiguration['data'] = {
+  gerenciaChartData: ChartConfiguration['data'] = {
     labels: [],
-    datasets: [{ data: [], backgroundColor: ['#4CAF50', '#FF9800', '#f44336'] }]
+    datasets: [{ data: [], backgroundColor: ['#00d4ff', '#7b2cbf', '#ff6b6b', '#feca57', '#54a0ff', '#00ff88'] }]
   };
   
-  mesChartData: ChartConfiguration['data'] = {
+  regimenChartData: ChartConfiguration['data'] = {
     labels: [],
-    datasets: [{ data: [], label: 'Monto por Mes', backgroundColor: '#00d4ff' }]
+    datasets: [{ data: [], backgroundColor: ['#00d4ff', '#7b2cbf', '#feca57', '#666'] }]
+  };
+
+  expiracionChartData: ChartConfiguration['data'] = {
+    labels: [],
+    datasets: [{ data: [], label: 'Registros', backgroundColor: [] }]
   };
 
   chartOptions: ChartConfiguration['options'] = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { labels: { color: '#fff' } }
+      legend: { display: false }
     },
     scales: {
       x: { ticks: { color: '#8892b0' }, grid: { color: 'rgba(255,255,255,0.1)' } },
@@ -56,7 +62,7 @@ export class Dashboard {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#fff' } }
+      legend: { position: 'right', labels: { color: '#fff', padding: 15 } }
     }
   };
 
@@ -104,6 +110,7 @@ export class Dashboard {
       this.stats = this.excelService.calculateStats();
       this.updateCharts();
       this.hasData = true;
+      this.lastUpdate = new Date().toLocaleString('es-MX');
     } catch (error) {
       this.errorMessage = 'Error al procesar el archivo. Verifica el formato.';
       console.error(error);
@@ -115,49 +122,51 @@ export class Dashboard {
   updateCharts() {
     if (!this.stats) return;
 
-    // Top 5 clientes
-    const clienteEntries = Object.entries(this.stats.porCliente)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
-    
-    this.clienteChartData = {
-      labels: clienteEntries.map(e => e[0].substring(0, 20)),
+    // Registros por mes de firma
+    const mesFirmaEntries = Object.entries(this.stats.porMesFirma).sort((a, b) => a[0].localeCompare(b[0]));
+    this.mesFirmaChartData = {
+      labels: mesFirmaEntries.map(e => e[0]),
       datasets: [{
-        data: clienteEntries.map(e => e[1]),
-        label: 'Monto',
-        backgroundColor: ['#00d4ff', '#7b2cbf', '#ff6b6b', '#feca57', '#54a0ff']
-      }]
-    };
-
-    // Estados
-    this.estadoChartData = {
-      labels: ['Pagadas', 'Pendientes', 'Canceladas'],
-      datasets: [{
-        data: [
-          this.stats.facturasPagadas,
-          this.stats.facturasPendientes,
-          this.stats.facturasCanceladas
-        ],
-        backgroundColor: ['#4CAF50', '#FF9800', '#f44336']
-      }]
-    };
-
-    // Por mes
-    const mesEntries = Object.entries(this.stats.porMes);
-    this.mesChartData = {
-      labels: mesEntries.map(e => e[0]),
-      datasets: [{
-        data: mesEntries.map(e => e[1]),
-        label: 'Monto',
+        data: mesFirmaEntries.map(e => e[1]),
+        label: 'Registros',
         backgroundColor: '#00d4ff'
       }]
     };
-  }
 
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(value);
+    // Por gerencia
+    const gerenciaEntries = Object.entries(this.stats.porGerencia).sort((a, b) => b[1] - a[1]);
+    this.gerenciaChartData = {
+      labels: gerenciaEntries.map(e => e[0]),
+      datasets: [{
+        data: gerenciaEntries.map(e => e[1]),
+        backgroundColor: ['#00d4ff', '#7b2cbf', '#ff6b6b', '#feca57', '#54a0ff', '#00ff88', '#e056fd', '#686de0']
+      }]
+    };
+
+    // Por régimen
+    const regimenEntries = Object.entries(this.stats.porRegimen);
+    this.regimenChartData = {
+      labels: regimenEntries.map(e => e[0]),
+      datasets: [{
+        data: regimenEntries.map(e => e[1]),
+        backgroundColor: ['#00d4ff', '#7b2cbf', '#feca57', '#666']
+      }]
+    };
+
+    // Por expiración
+    const expOrder = ['< 6 meses', '6-12 meses', '1-2 años', '> 2 años'];
+    const expColors = ['#ff6b6b', '#feca57', '#54a0ff', '#00ff88'];
+    const expiracionEntries = expOrder
+      .map(cat => ({ cat, val: this.stats!.porExpiracion[cat] || 0 }))
+      .filter(e => e.val > 0);
+    
+    this.expiracionChartData = {
+      labels: expiracionEntries.map(e => e.cat),
+      datasets: [{
+        data: expiracionEntries.map(e => e.val),
+        label: 'Registros',
+        backgroundColor: expiracionEntries.map((e, i) => expColors[expOrder.indexOf(e.cat)])
+      }]
+    };
   }
 }
