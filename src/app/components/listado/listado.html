@@ -1,7 +1,7 @@
 <div class="listado">
   <header class="header">
     <a routerLink="/" class="back-link">← Volver al Dashboard</a>
-    <h1>📋 Listado de Facturas</h1>
+    <h1>📋 Listado de Clientes</h1>
   </header>
 
   @if (data.length === 0) {
@@ -15,16 +15,24 @@
       <div class="filter-group">
         <input 
           type="text" 
-          placeholder="🔍 Buscar por cliente, RFC, concepto o UUID..."
+          placeholder="🔍 Buscar por razón social, RFC, gerencia, email..."
           [(ngModel)]="searchTerm"
           (input)="applyFilters()">
       </div>
       
       <div class="filter-group">
-        <select [(ngModel)]="filterEstado" (change)="applyFilters()">
-          <option value="">Todos los estados</option>
-          @for (estado of estados; track estado) {
-            <option [value]="estado">{{ estado }}</option>
+        <select [(ngModel)]="filterCsd" (change)="applyFilters()">
+          <option value="">Todos los CSD</option>
+          <option value="Activo">Activo</option>
+          <option value="Inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <select [(ngModel)]="filterRegimen" (change)="applyFilters()">
+          <option value="">Todos los regímenes</option>
+          @for (regimen of regimenes; track regimen) {
+            <option [value]="regimen">{{ regimen }}</option>
           }
         </select>
       </div>
@@ -43,55 +51,82 @@
       <table>
         <thead>
           <tr>
-            <th (click)="sortData('fecha')" class="sortable">
-              Fecha
-              @if (sortColumn === 'fecha') {
+            <th (click)="sortData('id')" class="sortable">
+              ID
+              @if (sortColumn === 'id') {
                 <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
               }
             </th>
-            <th (click)="sortData('cliente')" class="sortable">
-              Cliente
-              @if (sortColumn === 'cliente') {
+            <th (click)="sortData('razonSocial')" class="sortable">
+              Razón Social
+              @if (sortColumn === 'razonSocial') {
                 <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
               }
             </th>
-            <th>RFC</th>
-            <th>Concepto</th>
-            <th (click)="sortData('subtotal')" class="sortable numeric">
-              Subtotal
-              @if (sortColumn === 'subtotal') {
+            <th (click)="sortData('rfc')" class="sortable">
+              RFC
+              @if (sortColumn === 'rfc') {
                 <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
               }
             </th>
-            <th class="numeric">IVA</th>
-            <th (click)="sortData('total')" class="sortable numeric">
-              Total
-              @if (sortColumn === 'total') {
+            <th (click)="sortData('gerencia')" class="sortable">
+              Gerencia
+              @if (sortColumn === 'gerencia') {
                 <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
               }
             </th>
-            <th (click)="sortData('estado')" class="sortable">
-              Estado
-              @if (sortColumn === 'estado') {
+            <th (click)="sortData('regimen')" class="sortable">
+              Régimen
+              @if (sortColumn === 'regimen') {
                 <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
               }
             </th>
+            <th (click)="sortData('csd')" class="sortable">
+              CSD
+              @if (sortColumn === 'csd') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th (click)="sortData('expCsd')" class="sortable">
+              Exp. CSD
+              @if (sortColumn === 'expCsd') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th (click)="sortData('fechaFirma')" class="sortable">
+              Fecha Firma
+              @if (sortColumn === 'fechaFirma') {
+                <span class="sort-icon">{{ sortDirection === 'asc' ? '↑' : '↓' }}</span>
+              }
+            </th>
+            <th>Email</th>
           </tr>
         </thead>
         <tbody>
-          @for (item of filteredData; track item.uuid || $index) {
+          @for (item of filteredData; track item.id || item.rfc || $index) {
             <tr>
-              <td>{{ item.fecha }}</td>
-              <td class="client-cell" [title]="item.cliente">{{ item.cliente }}</td>
+              <td>{{ item.id }}</td>
+              <td class="razon-social-cell" [title]="item.razonSocial">{{ item.razonSocial }}</td>
               <td>{{ item.rfc }}</td>
-              <td class="concepto-cell" [title]="item.concepto">{{ item.concepto }}</td>
-              <td class="numeric">{{ formatCurrency(item.subtotal) }}</td>
-              <td class="numeric">{{ formatCurrency(item.iva) }}</td>
-              <td class="numeric total">{{ formatCurrency(item.total) }}</td>
+              <td>{{ item.gerencia }}</td>
               <td>
-                <span class="status-badge" [ngClass]="getEstadoClass(item.estado)">
-                  {{ item.estado }}
+                <span class="regimen-badge" [ngClass]="getRegimenClass(item.regimen)">
+                  {{ getRegimenShort(item.regimen) }}
                 </span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getCsdClass(item.csd)">
+                  {{ item.csd || 'N/A' }}
+                </span>
+              </td>
+              <td>{{ item.expCsd }}</td>
+              <td>{{ item.fechaFirma }}</td>
+              <td>
+                @if (item.email) {
+                  <a [href]="'mailto:' + item.email" class="email-link">{{ item.email }}</a>
+                } @else {
+                  <span class="no-data">—</span>
+                }
               </td>
             </tr>
           }

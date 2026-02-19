@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 
 export interface DiverReport {
+  // Campos de facturación
   fecha: string;
   cliente: string;
   rfc: string;
@@ -11,6 +12,15 @@ export interface DiverReport {
   total: number;
   estado: string;
   uuid: string;
+  // Campos de cliente (versión estable)
+  id: string;
+  razonSocial: string;
+  gerencia: string;
+  regimen: string;
+  csd: string;
+  expCsd: string;
+  fechaFirma: string;
+  email: string;
 }
 
 export interface DashboardStats {
@@ -73,15 +83,25 @@ export class ExcelService {
       if (!row || row.length === 0) continue;
       
       const report: DiverReport = {
-        fecha: this.getValue(row, headers, ['fecha', 'date']) || '',
-        cliente: this.getValue(row, headers, ['cliente', 'nombre', 'razon social', 'customer']) || '',
+        // Campos de facturación
+        fecha: this.getValue(row, headers, ['fecha', 'date', 'fecha firma']) || '',
+        cliente: this.getValue(row, headers, ['cliente', 'nombre', 'razon social', 'customer', 'id']) || '',
         rfc: this.getValue(row, headers, ['rfc']) || '',
         concepto: this.getValue(row, headers, ['concepto', 'descripcion', 'description']) || '',
         subtotal: this.getNumericValue(row, headers, ['subtotal', 'sub total']),
         iva: this.getNumericValue(row, headers, ['iva', 'impuesto']),
         total: this.getNumericValue(row, headers, ['total', 'monto', 'importe']),
         estado: this.getValue(row, headers, ['estado', 'status', 'estatus']) || 'Pendiente',
-        uuid: this.getValue(row, headers, ['uuid', 'folio fiscal']) || ''
+        uuid: this.getValue(row, headers, ['uuid', 'folio fiscal']) || '',
+        // Campos de cliente (versión estable)
+        id: this.getValue(row, headers, ['id', 'no.', 'numero', 'num']) || '',
+        razonSocial: this.getValue(row, headers, ['razon social', 'razón social', 'nombre', 'cliente']) || '',
+        gerencia: this.getValue(row, headers, ['gerencia', 'sucursal', 'oficina']) || '',
+        regimen: this.getValue(row, headers, ['regimen', 'régimen', 'regimen fiscal']) || '',
+        csd: this.getValue(row, headers, ['csd', 'certificado', 'estatus csd']) || '',
+        expCsd: this.getValue(row, headers, ['exp. csd', 'exp csd', 'expiracion csd', 'vencimiento']) || '',
+        fechaFirma: this.getValue(row, headers, ['fecha firma', 'firma', 'fecha de firma']) || '',
+        email: this.getValue(row, headers, ['email', 'correo', 'e-mail', 'mail']) || ''
       };
       
       if (report.cliente || report.total > 0) {

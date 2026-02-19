@@ -15,31 +15,37 @@ export class Listado implements OnInit {
   data: DiverReport[] = [];
   filteredData: DiverReport[] = [];
   searchTerm = '';
-  filterEstado = '';
+  filterCsd = '';
+  filterRegimen = '';
   sortColumn = '';
   sortDirection: 'asc' | 'desc' = 'asc';
   
-  estados: string[] = [];
+  regimenes: string[] = [];
 
   constructor(private excelService: ExcelService) {}
 
   ngOnInit() {
     this.data = this.excelService.getData();
     this.filteredData = [...this.data];
-    this.estados = [...new Set(this.data.map(d => d.estado))].filter(e => e);
+    this.regimenes = [...new Set(this.data.map(d => d.regimen).filter(r => r))];
   }
 
   applyFilters() {
     this.filteredData = this.data.filter(item => {
       const matchesSearch = !this.searchTerm || 
-        item.cliente.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        item.rfc.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        item.concepto.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-        item.uuid.toLowerCase().includes(this.searchTerm.toLowerCase());
+        (item.razonSocial?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (item.rfc?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (item.gerencia?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (item.email?.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (item.id?.toLowerCase().includes(this.searchTerm.toLowerCase()));
       
-      const matchesEstado = !this.filterEstado || item.estado === this.filterEstado;
+      const matchesCsd = !this.filterCsd || 
+        (this.filterCsd === 'Activo' && item.csd?.toLowerCase().includes('activo')) ||
+        (this.filterCsd === 'Inactivo' && !item.csd?.toLowerCase().includes('activo'));
       
-      return matchesSearch && matchesEstado;
+      const matchesRegimen = !this.filterRegimen || item.regimen === this.filterRegimen;
+      
+      return matchesSearch && matchesCsd && matchesRegimen;
     });
     
     if (this.sortColumn) {
@@ -76,42 +82,55 @@ export class Listado implements OnInit {
     });
   }
 
-  formatCurrency(value: number): string {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(value);
+  getCsdClass(csd: string): string {
+    if (!csd) return 'status-unknown';
+    const lower = csd.toLowerCase();
+    if (lower.includes('activo') || lower === 'si') return 'status-active';
+    if (lower.includes('inactivo') || lower === 'no') return 'status-inactive';
+    return 'status-unknown';
   }
 
-  getEstadoClass(estado: string): string {
-    const lower = estado.toLowerCase();
-    if (lower.includes('pagad') || lower.includes('paid')) return 'status-paid';
-    if (lower.includes('cancel')) return 'status-cancelled';
-    return 'status-pending';
+  getRegimenClass(regimen: string): string {
+    if (!regimen) return '';
+    const lower = regimen.toLowerCase();
+    if (lower.includes('pfae') || lower.includes('actividades empresariales')) return 'regimen-pfae';
+    if (lower.includes('resico') || lower.includes('simplificado')) return 'regimen-resico';
+    if (lower.includes('moral') || lower.includes('pm')) return 'regimen-pm';
+    return 'regimen-otro';
+  }
+
+  getRegimenShort(regimen: string): string {
+    if (!regimen) return '—';
+    const lower = regimen.toLowerCase();
+    if (lower.includes('pfae') || lower.includes('actividades empresariales')) return 'PFAE';
+    if (lower.includes('resico') || lower.includes('simplificado')) return 'RESICO';
+    if (lower.includes('moral')) return 'PM';
+    if (regimen.length > 20) return regimen.substring(0, 20) + '...';
+    return regimen;
   }
 
   exportToCSV() {
-    const headers = ['Fecha', 'Cliente', 'RFC', 'Concepto', 'Subtotal', 'IVA', 'Total', 'Estado', 'UUID'];
+    const headers = ['ID', 'Razón Social', 'RFC', 'Gerencia', 'Régimen', 'CSD', 'Exp. CSD', 'Fecha Firma', 'Email'];
     const rows = this.filteredData.map(item => [
-      item.fecha,
-      item.cliente,
+      item.id,
+      item.razonSocial,
       item.rfc,
-      item.concepto,
-      item.subtotal,
-      item.iva,
-      item.total,
-      item.estado,
-      item.uuid
+      item.gerencia,
+      item.regimen,
+      item.csd,
+      item.expCsd,
+      item.fechaFirma,
+      item.email
     ]);
     
     const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .map(row => row.map(cell => `"${cell || ''}"`).join(','))
       .join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = 'reporte_diverza.csv';
+    link.download = 'listado_clientes_diverza.csv';
     link.click();
   }
 }

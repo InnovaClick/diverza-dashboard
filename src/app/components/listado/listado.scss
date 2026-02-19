@@ -212,4 +212,67 @@ table {
     background: rgba(244, 67, 54, 0.2);
     color: #f44336;
   }
+
+  &.status-active {
+    background: rgba(0, 255, 136, 0.2);
+    color: #00ff88;
+  }
+
+  &.status-inactive {
+    background: rgba(255, 107, 107, 0.2);
+    color: #ff6b6b;
+  }
+
+  &.status-unknown {
+    background: rgba(150, 150, 150, 0.2);
+    color: #999;
+  }
+}
+
+.regimen-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  
+  &.regimen-pfae {
+    background: rgba(0, 212, 255, 0.2);
+    color: #00d4ff;
+  }
+  
+  &.regimen-resico {
+    background: rgba(123, 44, 191, 0.2);
+    color: #a855f7;
+  }
+  
+  &.regimen-pm {
+    background: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+  }
+  
+  &.regimen-otro {
+    background: rgba(150, 150, 150, 0.2);
+    color: #999;
+  }
+}
+
+.razon-social-cell {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.email-link {
+  color: #00d4ff;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.no-data {
+  color: #666;
 }
